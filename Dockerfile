@@ -1,18 +1,29 @@
-# Use a imagem base do Ubuntu
-FROM ubuntu:latest
 
-# Instale o OpenJDK 21
+FROM ubuntu:latest as build
+
+
 RUN apt-get update && \
-    apt-get install -y openjdk-21-jdk
+    apt-get install -y openjdk-21-jdk maven
 
-# Instale o gnupg2 e wget necessários
-RUN apt-get install -y gnupg2 wget
 
-# Instale o PostgreSQL 16 a partir dos repositórios do Ubuntu
-RUN apt-get install -y postgresql-16
+WORKDIR /teacherapi
 
-# Copie o arquivo JAR da aplicação para o contêiner
-COPY target/teacherapi-0.0.1-SNAPSHOT.jar /app/teacherapi.jar
 
-# Defina o comando de entrada
-ENTRYPOINT ["java", "-jar", "/app/teacherapi.jar"]
+COPY . .
+
+
+RUN mvn clean package -DskipTests
+
+# Etapa 2: Execução
+FROM openjdk:21-jdk-slim
+
+EXPOSE 8080
+
+
+COPY --from=build /teacherapi/target/teacherapi-0.0.1-SNAPSHOT.jar app.jar
+
+
+LABEL authors="professor"
+
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
